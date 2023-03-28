@@ -126,13 +126,17 @@ fn main() {
         String::from("sitemap.xml")
     };
 
-    let mut url = None;
     let mut urls = Vec::new();
     let mut names = Vec::new();
 
     if !get_flag!(parser, both, 'c', "clean") {
         let file = File::open(&path).expect("Failed to open file for reading");
         let file = BufReader::new(file);
+
+        let mut loc = None;
+        let mut lastmod = None;
+        let mut changefreq = None;
+        let mut priority = None;
 
         let parser = EventReader::new(file);
         for e in parser {
@@ -146,7 +150,14 @@ fn main() {
                     // depth -= 1;
                     // println!("{}</{}>", indent(depth), name.local_name);
                     if name.local_name == "url" {
-                        urls.push(url.take().unwrap());
+                        if let Some(loc) = loc.take() {
+                            let mut url = Url::new(loc);
+                            url.lastmod = lastmod.take();
+                            url.changefreq = changefreq.take();
+                            url.priority = priority.take();
+
+                            urls.push(url);
+                        }
                     }
 
                     names.pop();
@@ -156,10 +167,10 @@ fn main() {
 
                     if let Some(name) = names.last() {
                         match name.local_name.as_str() {
-                            "loc" => url = Some(Url::new(data)),
-                            "lastmod" => url.as_mut().unwrap().lastmod = Some(data),
-                            "changefreq" => url.as_mut().unwrap().changefreq = Some(data),
-                            "priority" => url.as_mut().unwrap().priority = Some(data),
+                            "loc" => loc = Some(data),
+                            "lastmod" => lastmod = Some(data),
+                            "changefreq" => changefreq = Some(data),
+                            "priority" => priority = Some(data),
                             _ => {}
                         }
                     }
