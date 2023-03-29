@@ -4,6 +4,7 @@ use std::fmt::Display;
 use std::fs::OpenOptions;
 use std::io::{BufReader, BufWriter, Write};
 use std::path::PathBuf;
+use std::process::exit;
 use std::{fs::File, path::Path};
 
 use sarge::{arg, get_flag, get_val, ArgValue, ArgumentParser};
@@ -129,8 +130,15 @@ fn main() {
     let mut urls = Vec::new();
     let mut names = Vec::new();
 
-    if !get_flag!(parser, both, 'c', "clean") {
-        let file = File::open(&path).expect("Failed to open file for reading");
+    if !get_flag!(parser, both, 'c', "clean") && Path::new(&path).exists() {
+        let file = match File::open(&path) {
+            Ok(f) => f,
+            Err(e) => {
+                eprintln!("ERROR: Failed to open `{path}`: {e}");
+                exit(1);
+            }
+        };
+
         let file = BufReader::new(file);
 
         let mut loc = None;
@@ -197,10 +205,18 @@ fn main() {
 
     if let Some(ArgValue::String(loc)) = get_val!(parser, both, 'a', "add") {
         let mut url = if get_flag!(parser, long, "to-url") {
+            let root = match get_val!(parser, long, "root") {
+                Some(v) => v.get_str(),
+                None => {
+                    eprintln!("ERROR: Must pass `--root` to `--to-url`");
+                    exit(1);
+                }
+            };
+
             Url::new(
                 file_to_url(
                     Path::new(&loc),
-                    get_val!(parser, long, "root").expect("Must pass `--root` to `--to-url`").get_str(),
+                    root,
                     get_val!(parser, long, "old-root").map(|s| s.get_str()),
                     get_flag!(parser, long, "clean-url")
                 )
@@ -226,21 +242,34 @@ fn main() {
         }
     }
 
-    let file = OpenOptions::new()
+    let file = match OpenOptions::new()
         .write(true)
         .truncate(true)
         .create(true)
-        .open(path)
-        .expect("Failed to open file for writing");
+        .open(path) {
+        Ok(f) => f,
+        Err(e) => {
+            eprintln!("ERROR: Failed to open file to write: {e}");
+            exit(1);
+        }
+    };
 
     let mut file = BufWriter::new(file);
 
-    writeln!(file, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>").expect("Failed to write to file");
-    writeln!(file, "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">").expect("Failed to write to file");
-
-    for url in urls {
-        writeln!(file, "{url}").expect("Failed to write to file");
+    if let Err(e) = writeln!(file, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">") {
+        eprintln!("ERROR: Failed to write to file: {e}");
+        exit(1);
     }
 
-    writeln!(file, "</urlset>").expect("Failed to write to file");
+    for url in urls {
+        if let Err(e) = writeln!(file, "{url}") {
+            eprintln!("ERROR: Failed to write to file: {e}");
+            exit(1);
+        }
+    }
+
+    if let Err(e) = writeln!(file, "</urlset>") {
+        eprintln!("ERROR: Failed to write to file: {e}");
+        exit(1);
+    }
 }
