@@ -22,7 +22,6 @@ fn file_to_url(mut file: &Path, root: String, oldroot: Option<String>, clean: bo
     let mut path = PathBuf::new();
     path.push(&root);
 
-    println!("{:?}", file.file_prefix());
     if clean && file.file_prefix().is_some() && file.file_prefix().unwrap() == "index" {
         path.push(file.ancestors().skip(1).collect::<PathBuf>().as_path());
     } else {
