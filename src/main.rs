@@ -209,19 +209,21 @@ fn main() {
             Url::new(loc)
         };
 
-        if let Some(ArgValue::String(lastmod)) = get_val!(parser, long, "lastmod") {
-            url.lastmod = Some(lastmod);
-        }
+        if !urls.iter().any(|u| u.loc == url.loc) {
+            if let Some(ArgValue::String(lastmod)) = get_val!(parser, long, "lastmod") {
+                url.lastmod = Some(lastmod);
+            }
 
-        if let Some(ArgValue::String(changefreq)) = get_val!(parser, long, "changefreq") {
-            url.changefreq = Some(changefreq);
-        }
+            if let Some(ArgValue::String(changefreq)) = get_val!(parser, long, "changefreq") {
+                url.changefreq = Some(changefreq);
+            }
 
-        if let Some(ArgValue::String(priority)) = get_val!(parser, long, "priority") {
-            url.priority = Some(priority);
-        }
+            if let Some(ArgValue::String(priority)) = get_val!(parser, long, "priority") {
+                url.priority = Some(priority);
+            }
 
-        urls.push(url);
+            urls.push(url);
+        }
     }
 
     let file = OpenOptions::new()
