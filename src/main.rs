@@ -103,7 +103,10 @@ fn main() {
     parser.parse().expect("Failed to parse arguments");
 
     if get_flag!(parser, both, 'h', "help") {
-        println!("{} [options]", parser.binary.unwrap_or_else(|| String::from("onsite")));
+        println!(
+            "{} [options]",
+            parser.binary.unwrap_or_else(|| String::from("onsite"))
+        );
         println!("        -h |  --help : print this help message");
         println!("        -c | --clean : remove all urls from the sitemap");
         println!("        -f |  --file : specify the sitemap file (default: sitemap.xml)");
@@ -194,7 +197,8 @@ fn main() {
     }
 
     if let Some(ArgValue::String(loc)) = get_val!(parser, both, 'r', "remove") {
-        let i = urls.iter()
+        let i = urls
+            .iter()
             .enumerate()
             .find(|(_, url)| url.loc == loc)
             .map(|(i, _)| i);
@@ -214,14 +218,12 @@ fn main() {
                 }
             };
 
-            Url::new(
-                file_to_url(
-                    Path::new(&loc),
-                    root,
-                    get_val!(parser, long, "old-root").map(|s| s.get_str()),
-                    get_flag!(parser, long, "clean-url")
-                )
-            )
+            Url::new(file_to_url(
+                Path::new(&loc),
+                root,
+                get_val!(parser, long, "old-root").map(|s| s.get_str()),
+                get_flag!(parser, long, "clean-url"),
+            ))
         } else {
             Url::new(loc)
         };
@@ -247,7 +249,8 @@ fn main() {
         .write(true)
         .truncate(true)
         .create(true)
-        .open(path) {
+        .open(path)
+    {
         Ok(f) => f,
         Err(e) => {
             eprintln!("ERROR: Failed to open file to write: {e}");
