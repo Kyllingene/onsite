@@ -1,18 +1,17 @@
 #![feature(path_file_prefix)]
 
 use std::fmt::Display;
-use std::fs::OpenOptions;
+use std::fs::{File, OpenOptions};
 use std::io::{BufReader, BufWriter, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::exit;
-use std::{fs::File, path::Path};
 
 use sarge::{arg, get_flag, get_val, ArgValue, ArgumentParser};
 use xml::reader::{EventReader, XmlEvent};
 
 fn file_to_url(mut file: &Path, root: String, oldroot: Option<String>, clean: bool) -> String {
-    if oldroot.is_some() {
-        file = if let Ok(f) = file.strip_prefix(&oldroot.unwrap()) {
+    if let Some(oldroot) = &oldroot {
+        file = if let Ok(f) = file.strip_prefix(oldroot) {
             f
         } else {
             file
@@ -20,10 +19,13 @@ fn file_to_url(mut file: &Path, root: String, oldroot: Option<String>, clean: bo
     }
 
     let mut path = PathBuf::new();
-    path.push(&root);
+    path.push(root);
 
-    if clean && file.file_prefix().is_some() && file.file_prefix().unwrap() == "index" {
-        path.push(file.ancestors().skip(1).collect::<PathBuf>().as_path());
+    if clean && file.file_prefix().is_some() {
+        path.push(file.ancestors().nth(1).unwrap());
+        if file.file_prefix().unwrap() != "index" {
+            path.push(file.file_prefix().unwrap());
+        }
     } else {
         path.push(file);
     }
@@ -31,12 +33,12 @@ fn file_to_url(mut file: &Path, root: String, oldroot: Option<String>, clean: bo
     path.to_string_lossy().to_string()
 }
 
-fn escape(l: &String) -> String {
+fn escape(l: &str) -> String {
     l.replace('&', "&amp;")
         .replace('\'', "&apos;")
         .replace('"', "&quot;")
-        .replace(">", "&gt;")
-        .replace("<", "&lt;")
+        .replace('>', "&gt;")
+        .replace('<', "&lt;")
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -183,7 +185,7 @@ fn main() {
                     }
                 }
                 Err(e) => {
-                    eprintln!("Error: {}", e);
+                    eprintln!("ERROR: {e}");
                     break;
                 }
                 _ => {}

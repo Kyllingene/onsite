@@ -4,7 +4,7 @@ version = 3
 
 [[package]]
 name = "onsite"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "sarge",
  "xml-rs",
