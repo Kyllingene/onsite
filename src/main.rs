@@ -1,5 +1,3 @@
-#![feature(path_file_prefix)]
-
 use std::fmt::Display;
 use std::fs::{File, OpenOptions};
 use std::io::{BufReader, BufWriter, Write};
@@ -24,7 +22,7 @@ fn file_to_url(mut file: &Path, root: String, oldroot: Option<String>, clean: bo
     if clean && file.file_prefix().is_some() {
         path.push(file.ancestors().nth(1).unwrap());
         if file.file_prefix().unwrap() != "index" {
-            path.push(file.file_prefix().unwrap());
+            path.push(file.file_stem().unwrap());
         }
     } else {
         path.push(file);
